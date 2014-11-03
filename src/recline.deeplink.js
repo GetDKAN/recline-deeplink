@@ -9,41 +9,76 @@ this.recline.DeepLink = this.recline.DeepLink || {};
   my.Router = function(multiview){
     var self = this;
     var currentView = null;
-
     var r;
-
+    var changes = {};
 
     self.updateState = function(state){
       var multiviewState = self.parmsToState(state);
-      multiviewState = _.extend(multiview.state.attributes, multiviewState);
+      if (multiviewState) {
+        multiviewState = _.extend(multiview.state.attributes, multiviewState);
 
-      multiview.model.queryState.set(multiviewState.query);
-      multiview.updateNav(multiviewState.currentView);
+        multiview.model.queryState.set(multiviewState.query);
+        multiview.updateNav(multiviewState.currentView);
 
-      _.each(multiview.pageViews, function(view, index){
-        var viewKey ='view-' + view.id;
-        var pageView = multiview.pageViews[index];
-        pageView.view.state.set(multiviewState[viewKey]);
-        if(typeof pageView.view.redraw === 'function' && pageView.id === 'graph'){
-          setTimeout(pageView.view.redraw, 0);
-        }
-
-      });
-
+        _.each(multiview.pageViews, function(view, index){
+          var viewKey ='view-' + view.id;
+          var pageView = multiview.pageViews[index];
+          pageView.view.state.set(multiviewState[viewKey]);
+          if(typeof pageView.view.redraw === 'function' && pageView.id === 'graph'){
+            setTimeout(pageView.view.redraw, 0);
+          }
+        });
+      }
     };
 
     self.parmsToState = function(serializedState){
-      return JSON.parse(decodeURI(serializedState));
+      var state;
+      try{
+        state = JSON.parse(decodeURI(serializedState));
+      } catch(e){
+        state = null;
+      }
+      return state;
     };
 
     self.stateToParams = function(state){
-      return encodeURI(JSON.stringify(_.omit(state.attributes, 'dataset')));
+      var params;
+      try{
+        params = encodeURI(JSON.stringify(_.omit(state.attributes, 'dataset')));
+      } catch(e){
+        params = null;
+      }
+      return params;
+    };
+
+    // self.compressUrl = function(url){
+    //   var str = self.replaceAll('{','!',url);
+    //   str = self.replaceAll('}','$',str);
+    //   str = self.replaceAll('"','\'', str);
+    //   return str;
+    // };
+
+    // self.uncompressURL = function(){
+
+    // };
+
+    self.replaceAll = function(find, replace, str) {
+      return str.replace(new RegExp(find, 'g'), replace);
     };
 
     self.onStateChange = function(event){
-      console.log('onStateChange');
+      // var newState = new recline.Model.ObjectState();
+      // changes = self.saveChanges(multiview.state.changed, changes);
+      // newState.attributes = changes;
       r.navigate(self.stateToParams(multiview.state));
       self.updateControls();
+    };
+
+    self.saveChanges = function(delta, changes){
+      for(var change in delta){
+        changes[change] = delta[change];
+      }
+      return changes;
     };
 
     self.updateControls = function(){
@@ -87,7 +122,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       r = new Router();
       multiview.listenTo(multiview.state, 'all', self.onStateChange);
       multiview.model.bind('all', self.onStateChange);
-
       Backbone.history.start();
     }
 
