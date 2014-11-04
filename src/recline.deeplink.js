@@ -9,11 +9,12 @@ this.recline.DeepLink = this.recline.DeepLink || {};
   my.Router = function(multiview){
     var self = this;
     var currentView = null;
-    var r;
+    var router;
     var changes = {};
 
     self.updateState = function(state){
-      var multiviewState = self.parmsToState(state);
+      var multiviewState = self.transform(state, self.toState);
+
       changes = multiviewState || {};
       if (multiviewState) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
@@ -31,36 +32,29 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
     };
 
-    self.parmsToState = function(serializedState){
-      var state;
+    self.transform = function(input, transformFunction){
+      var result;
       try{
-        state = JSON.parse(decodeURI(serializedState));
+        result = transformFunction(input);
       } catch(e){
-        state = null;
+        result = null;
       }
-      return state;
+      return result;
     };
 
-    self.stateToParams = function(state){
-      var params;
-      try{
-        params = encodeURI(JSON.stringify(_.omit(state.attributes, 'dataset')));
-      } catch(e){
-        params = null;
-      }
-      return params;
+    self.toState = function(serializedState){
+      return JSON.parse(decodeURI(serializedState));
     };
 
-    self.replaceAll = function(find, replace, str) {
-      return str.replace(new RegExp(find, 'g'), replace);
+    self.toParams = function(state){
+      return encodeURI(JSON.stringify(_.omit(state.attributes, 'dataset')));
     };
 
     self.onStateChange = function(event){
       var newState = new recline.Model.ObjectState();
-
       changes = self.saveChanges(multiview.state.changed, changes);
       newState.attributes = changes;
-      r.navigate(self.stateToParams(newState));
+      router.navigate(self.transform(newState, self.toParams));
       self.updateControls();
     };
 
@@ -109,7 +103,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
           self.updateState(state);
         }
       });
-      r = new Router();
+      router = new Router();
       multiview.listenTo(multiview.state, 'all', self.onStateChange);
       multiview.model.bind('all', self.onStateChange);
       Backbone.history.start();
