@@ -14,9 +14,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
 
     self.updateState = function(state){
       var multiviewState = self.parmsToState(state);
+      changes = multiviewState || {};
       if (multiviewState) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
-
         multiview.model.queryState.set(multiviewState.query);
         multiview.updateNav(multiviewState.currentView);
 
@@ -51,26 +51,16 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       return params;
     };
 
-    // self.compressUrl = function(url){
-    //   var str = self.replaceAll('{','!',url);
-    //   str = self.replaceAll('}','$',str);
-    //   str = self.replaceAll('"','\'', str);
-    //   return str;
-    // };
-
-    // self.uncompressURL = function(){
-
-    // };
-
     self.replaceAll = function(find, replace, str) {
       return str.replace(new RegExp(find, 'g'), replace);
     };
 
     self.onStateChange = function(event){
-      // var newState = new recline.Model.ObjectState();
-      // changes = self.saveChanges(multiview.state.changed, changes);
-      // newState.attributes = changes;
-      r.navigate(self.stateToParams(multiview.state));
+      var newState = new recline.Model.ObjectState();
+
+      changes = self.saveChanges(multiview.state.changed, changes);
+      newState.attributes = changes;
+      r.navigate(self.stateToParams(newState));
       self.updateControls();
     };
 
@@ -123,10 +113,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       multiview.listenTo(multiview.state, 'all', self.onStateChange);
       multiview.model.bind('all', self.onStateChange);
       Backbone.history.start();
-    }
+    };
 
     self.initialize();
-  }
+  };
 
 
 })(jQuery, this.recline.DeepLink);
