@@ -54,5 +54,5 @@ module.exports = function(grunt) {
     'watch'
   ]);
 
-  grunt.registerTask('validate', ['jshint']);
+  grunt.registerTask('lint', ['jshint']);
 };
