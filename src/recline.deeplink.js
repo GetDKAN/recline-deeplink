@@ -6,6 +6,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
 (function($, my) {
   'use strict';
 
+  /**
+   * Router object
+   * @param {recline.view.MultiView} multiview
+   */
   my.Router = function(multiview){
     var self = this;
     var currentView = null;
@@ -15,8 +19,12 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     var deep = DeepDiff.noConflict();
     var firstState = _.clone(_.omit(multiview.state.attributes, 'dataset'));
 
-    self.updateState = function(state){
-      var multiviewState = self.transform(state, self.toState);
+    /**
+     * Update the multiview state and render the new state.
+     * @param  {String} state
+     */
+    self.updateState = function(serializedState){
+      var multiviewState = self.transform(serializedState, self.toState);
       changes = multiviewState || {};
       if (multiviewState) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
@@ -36,6 +44,12 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
     };
 
+    /**
+     * Applies a transform function to the input and return de result.
+     * @param  {String} input
+     * @param  {Function} transformFunction
+     * @return {String}
+     */
     self.transform = function(input, transformFunction){
       var result;
       try{
@@ -47,16 +61,33 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       return result;
     };
 
+    /**
+     * Converts a serialized state string to an object.
+     * @param  {String} serializedState
+     * @return {Object}
+     */
     self.toState = function(serializedState){
       var stringObject = parser.inflate(decodeURI(serializedState));
       return JSON.parse(stringObject);
     };
 
+    /**
+     * Converts an object state to a string.
+     * @param  {Object} state
+     * @return {String}
+     */
     self.toParams = function(state){
       var stringObject = JSON.stringify(_.omit(state.attributes, 'dataset'));
       return parser.compress(stringObject);
     };
 
+    /**
+     * Listen for changes in the multiview state. It computes the differences
+     * between the initial state and the current state. Creates a patch object
+     * from this difference. Converts this new object to params and finally
+     * navigates to that state.
+     * @param  {Event} event
+     */
     self.onStateChange = function(event){
       var ch = deep.diff(firstState, _.omit(multiview.state.attributes, 'dataset'));
       var tempChanges = {};
@@ -74,8 +105,15 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       self.updateControls();
     };
 
-    self.createNestedObject = function( base, prop, value ) {
-        var names = _.clone(prop);
+    /**
+     * Creates a nested object following the props path.
+     * @param  {Object} base
+     * @param  {Array} prop
+     * @param  {*} value
+     * @return {Object}
+     */
+    self.createNestedObject = function( base, props, value ) {
+        var names = _.clone(props);
         var lastName = arguments.length === 3 ? names.pop() : false;
 
         for( var i = 0; i < names.length; i++) {
@@ -101,13 +139,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
         return base;
     };
 
-    self.saveChanges = function(delta, changes){
-      for(var change in delta){
-        changes[change] = delta[change];
-      }
-      return changes;
-    };
-
+    /**
+     * Updates controls based on the new state.
+     */
     self.updateControls = function(){
       var id = multiview.state.get('currentView');
       if(id === 'graph' || id === 'map') {
@@ -121,11 +155,19 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
     };
 
+    /**
+     * Gets the current displayed view of the multiview.
+     * @return {Object}
+     */
     self.getCurrentView = function(){
       var id = multiview.state.get('currentView');
       return _.findWhere(multiview.pageViews, {id:id});
     };
 
+    /**
+     * Gets the index of current displayed view.
+     * @return {[Integer]}
+     */
     self.getCurrentViewIndex = function(){
       var id = multiview.state.get('currentView');
       var index;
@@ -137,6 +179,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       return index;
     };
 
+    /**
+     * Initializes the router object.
+     */
     self.initialize = function(){
       var Router = Backbone.Router.extend({
         routes: {
@@ -152,11 +197,20 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       Backbone.history.start();
     };
 
+    // Entry point.
     self.initialize();
   };
 
+  /**
+   * Url parser
+   */
   my.Parser = function(){
     var self = this;
+
+    /**
+     * TODO
+     * Use this compress map to reduce even more the url size.
+     */
     var compressMap = {
       'backend':'b',
       'currentView': 'c',
@@ -192,6 +246,11 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       'lonField': 'lof',
     };
 
+    /**
+     * Reduces the size of the url removing unnecesary characters.
+     * @param  {String} str
+     * @return {String}
+     */
     self.compress = function(str){
       //replace words
       //remove start and end brackets
@@ -199,15 +258,30 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       return self.escapeStrings(str);
     };
 
+    /**
+     * Inflates a compressed url string.
+     * @param  {String} str
+     * @return {String}
+     */
     self.inflate = function(str){
       return self.parseStrings(str);
     };
 
+    /**
+     * Escape all the string prepending a ! character to each one.
+     * @param  {String} str
+     * @return {String}
+     */
     self.escapeStrings = function(str){
       str = str.replace(/"([a-zA-Z-]+)"\s?:/g ,  "$1:");
       return str.replace(/"([a-zA-Z-#]+)"/g ,  "!$1");
     };
 
+    /**
+     * Converts all escaped strings to javascript strings.
+     * @param  {String} str
+     * @return {String}
+     */
     self.parseStrings = function(str){
       str = str.replace(/([a-zA-Z-]+)\s?:/g ,  "\"$1\":");
       return str.replace(new RegExp('!([a-zA-Z-#]+)', 'g'),  "\"$1\"");
