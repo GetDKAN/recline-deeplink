@@ -274,7 +274,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      */
     self.escapeStrings = function(str){
       str = str.replace(/"([a-zA-Z-]+)"\s?:/g ,  "$1:");
-      return str.replace(/"([a-zA-Z-#]+)"/g ,  "!$1");
+      //replace spaces between quotes with underscores
+      str = str.replace(/\x20(?![^"]*("[^"]*"[^"]*)*$)/g, "_");
+      return str.replace(/"([a-zA-Z-#_]+)"/g ,  "!$1");
     };
 
     /**
@@ -284,7 +286,8 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      */
     self.parseStrings = function(str){
       str = str.replace(/([a-zA-Z-]+)\s?:/g ,  "\"$1\":");
-      return str.replace(new RegExp('!([a-zA-Z-#]+)', 'g'),  "\"$1\"");
+      str = str.replace(/!\w+/g, function(x) { return x.replace(/_/g, ' '); });
+      return str.replace(new RegExp('!([a-zA-Z-# ]+)', 'g'),  "\"$1\"");
     };
   };
 
