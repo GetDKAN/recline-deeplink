@@ -273,10 +273,11 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.escapeStrings = function(str){
-      str = str.replace(/"([a-zA-Z-]+)"\s?:/g ,  "$1:");
-      //replace spaces between quotes with underscores
+      //stripping quotes from keys
+      str = str.replace(/"([a-zA-Z-_.]+)"\s?:/g ,  "$1:");
+      //replacing spaces between quotes with underscores
       str = str.replace(/\x20(?![^"]*("[^"]*"[^"]*)*$)/g, "_");
-      return str.replace(/"([a-zA-Z-#_]+)"/g ,  "!$1");
+      return str.replace(/"([a-zA-Z-#_.-]+)?"/g ,  "!$1");
     };
 
     /**
@@ -285,9 +286,11 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.parseStrings = function(str){
-      str = str.replace(/([a-zA-Z-]+)\s?:/g ,  "\"$1\":");
+      //adding quotes to keys
+      str = str.replace(/([a-zA-Z-_.]+)\s?:/g ,  "\"$1\":");
+      //replacing underscores with spaces for any word that start with !
       str = str.replace(/!\w+/g, function(x) { return x.replace(/_/g, ' '); });
-      return str.replace(new RegExp('!([a-zA-Z-# ]+)', 'g'),  "\"$1\"");
+      return str.replace(new RegExp('!([a-zA-Z-# .-]+)?', 'g'),  "\"$1\"");
     };
   };
 
