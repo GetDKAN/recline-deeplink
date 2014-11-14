@@ -289,7 +289,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       //adding quotes to keys
       str = str.replace(/([a-zA-Z-_.]+)\s?:/g ,  "\"$1\":");
       //replacing underscores with spaces for any word that start with !
-      str = str.replace(/!\w+/g, function(x) { return x.replace(/_/g, ' '); });
+      str = str.replace(/![a-zA-Z0-9_. -]+/g, function(x) { return x.replace(/_/g, ' '); });
       return str.replace(new RegExp('!([a-zA-Z-# .-]+)?', 'g'),  "\"$1\"");
     };
   };
