@@ -144,6 +144,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      */
     self.updateControls = function(){
       var id = multiview.state.get('currentView');
+      multiview.pager.render();
       if(id === 'graph' || id === 'map') {
         var index = self.getCurrentViewIndex();
         var menuMap = {graph:'editor', map:'menu'};
