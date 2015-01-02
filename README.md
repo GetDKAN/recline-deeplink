@@ -44,3 +44,6 @@ grunt lint
 ```bash
 make
 ```
+
+## Caveats
+Since the state is shared through url, data edition (eg. add, delete or edit a row in the dataset) is not saved at all.

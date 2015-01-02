@@ -3,7 +3,7 @@
 this.recline = this.recline || {};
 this.recline.DeepLink = this.recline.DeepLink || {};
 
-(function($, my) {
+;(function($, my) {
   'use strict';
 
   /**
@@ -17,14 +17,27 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     var changes = {};
     var parser = new my.Parser();
     var deep = DeepDiff.noConflict();
-    var firstState = _.clone(_.omit(JSON.parse(JSON.stringify(multiview.state)), 'dataset'));
+    var firstState = _.omit(JSON.parse(JSON.stringify(multiview.state)), 'dataset');
+    var currentState = {};
+    var dependencies = {};
+
+
+    function inv(method){
+      var args = _.rest(_.toArray(arguments))
+      return function(ctrl){
+        return _.isFunction(ctrl[method]) && ctrl[method].apply(ctrl, args);
+      };
+    }
+
     /**
      * Update the multiview state and render the new state.
      * @param  {String} state
      */
     self.updateState = function(serializedState){
       var multiviewState = self.transform(serializedState, self.toState);
-      changes = multiviewState || {};
+      _.each(dependencies, inv('update', multiviewState));
+      changes = _.omit(multiviewState, _.keys(dependencies)) || {};
+
       if (multiviewState && !_.isEmpty(multiviewState)) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
         multiview.model.queryState.set(multiviewState.query);
@@ -33,7 +46,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
           var viewKey ='view-' + view.id;
           var pageView = multiview.pageViews[index];
           pageView.view.state.set(multiviewState[viewKey]);
-          if(typeof pageView.view.redraw === 'function' && pageView.id === 'graph'){
+          if(_.isFunction(pageView.view.redraw) && pageView.id === 'graph'){
             setTimeout(pageView.view.redraw, 0);
           } else if(pageView.id === 'grid') {
             pageView.view.render();
@@ -42,6 +55,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       } else {
         multiview.updateNav('grid');
       }
+    };
+
+    self.addDependency = function(ctrl){
+      dependencies[ctrl.name] = ctrl;
     };
 
     /**
@@ -55,7 +72,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       try{
         result = transformFunction(input);
       } catch(e){
-        console.log(e);
         result = null;
       }
       return result;
@@ -90,8 +106,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      */
     self.onStateChange = function(event){
       var ch = deep.diff(firstState, _.omit(multiview.state.attributes, 'dataset'));
+      var newState;
       var tempChanges = {};
       _.each(ch, function(c){
+        console.log(c.path);
         if(c.kind === 'E'){
           self.createNestedObject(tempChanges, c.path, c.rhs);
         } else if(c.kind === 'A') {
@@ -100,11 +118,26 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       });
 
       changes = _.extend(changes, tempChanges);
-
-      var newState = new recline.Model.ObjectState();
+      newState = new recline.Model.ObjectState();
       newState.attributes = changes;
+      newState.attributes = self.alterState(newState.attributes);
+      currentState = newState;
       router.navigate(self.transform(newState, self.toParams));
       self.updateControls();
+    };
+
+    /**
+     * Creates a composed function based on alterState function from each dependency
+     * and run it through the pipeline passing as parameter the state and returning
+     * the altered state object.
+     * @param  {Object} state
+     */
+    self.alterState = function(state){
+      if(_.isEmpty(dependencies)) return state;
+      var alter = _.compose.apply(null, _.map(dependencies, function(ctrl){
+        return ctrl['alterState'];
+      }));
+      return alter(state);
     };
 
     /**
@@ -185,7 +218,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     /**
      * Initializes the router object.
      */
-    self.initialize = function(){
+    self.start = function(){
       var Router = Backbone.Router.extend({
         routes: {
           '*state': 'defaultRoute',
@@ -200,8 +233,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       Backbone.history.start();
     };
 
-    // Entry point.
-    self.initialize();
   };
 
   /**
@@ -209,45 +240,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
    */
   my.Parser = function(){
     var self = this;
-
-    /**
-     * TODO
-     * Use this compress map to reduce even more the url size.
-     */
-    var compressMap = {
-      'backend':'b',
-      'currentView': 'c',
-      'dataset':'d',
-      'fields': 'f',
-      'records': 'r',
-      'query': 'qy',
-      'facets': 'fc',
-      'filters':'fl',
-      'from': 'fr',
-      'q':'q',
-      'size':'sz',
-      'readOnly':'ro',
-      'url':'ul',
-      'view-graph': 'vga',
-      'graphType': 'gt',
-      'group': 'gp',
-      'series': 'sr',
-      'view-grid':'vgi',
-      'columnsEditor': 'ce',
-      'columnsOrder': 'co',
-      'columnsSort': 'cs',
-      'columnsWith':'cw',
-      'fitColumns': 'fcm',
-      'gridOptions': 'go',
-      'hiddenColumns': 'hc',
-      'options':'op',
-      'view-map':'vm',
-      'autoZoom': 'az',
-      'cluster': 'cl',
-      'geomField': 'gf',
-      'latField': 'laf',
-      'lonField': 'lof',
-    };
 
     /**
      * Reduces the size of the url removing unnecesary characters.

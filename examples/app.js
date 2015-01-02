@@ -13,6 +13,10 @@ jQuery(function($) {
   window.multiview = createMultiView(dataset);
 
   window.router = new recline.DeepLink.Router(window.multiview);
+  var map = window.multiview.pageViews[2].view.map;
+  window.router.addDependency(new recline.DeepLink.Deps.Map(map, window.router));
+  window.router.start();
+
   // last, we'll demonstrate binding to changes in the dataset
   // this will print out a summary of each change onto the page in the
   // changelog section
