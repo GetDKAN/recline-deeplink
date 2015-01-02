@@ -17,8 +17,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     var changes = {};
     var parser = new my.Parser();
     var deep = DeepDiff.noConflict();
-    var firstState = _.clone(_.omit(multiview.state.attributes, 'dataset'));
-
+    var firstState = _.clone(_.omit(JSON.parse(JSON.stringify(multiview.state)), 'dataset'));
     /**
      * Update the multiview state and render the new state.
      * @param  {String} state
@@ -26,21 +25,22 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     self.updateState = function(serializedState){
       var multiviewState = self.transform(serializedState, self.toState);
       changes = multiviewState || {};
-      if (multiviewState) {
+      if (multiviewState && !_.isEmpty(multiviewState)) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
         multiview.model.queryState.set(multiviewState.query);
-        multiview.updateNav(multiviewState.currentView);
-
+        multiview.updateNav(multiviewState.currentView || 'grid');
         _.each(multiview.pageViews, function(view, index){
           var viewKey ='view-' + view.id;
           var pageView = multiview.pageViews[index];
           pageView.view.state.set(multiviewState[viewKey]);
-          if(typeof pageView.view.redraw === 'function' && pageView.id === 'graph'){
+          if(_.isFunction(pageView.view.redraw) && pageView.id === 'graph'){
             setTimeout(pageView.view.redraw, 0);
           } else if(pageView.id === 'grid') {
             pageView.view.render();
           }
         });
+      } else {
+        multiview.updateNav('grid');
       }
     };
 
@@ -55,7 +55,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       try{
         result = transformFunction(input);
       } catch(e){
-        console.log(e);
         result = null;
       }
       return result;
@@ -98,7 +97,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
           self.createNestedObject(tempChanges, c.path, c);
         }
       });
+
       changes = _.extend(changes, tempChanges);
+
       var newState = new recline.Model.ObjectState();
       newState.attributes = changes;
       router.navigate(self.transform(newState, self.toParams));
@@ -278,7 +279,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       str = str.replace(/"([a-zA-Z-_.]+)"\s?:/g ,  "$1:");
       //replacing spaces between quotes with underscores
       str = str.replace(/\x20(?![^"]*("[^"]*"[^"]*)*$)/g, "_");
-      return str.replace(/"([a-zA-Z-#_.-]+)?"/g ,  "!$1");
+      return str.replace(/"([a-zA-Z0-9-#_.-]+)?"/g ,  "!$1");
     };
 
     /**
@@ -291,7 +292,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       str = str.replace(/([a-zA-Z-_.]+)\s?:/g ,  "\"$1\":");
       //replacing underscores with spaces for any word that start with !
       str = str.replace(/![a-zA-Z0-9_. -]+/g, function(x) { return x.replace(/_/g, ' '); });
-      return str.replace(new RegExp('!([a-zA-Z-# .-]+)?', 'g'),  "\"$1\"");
+      return str.replace(new RegExp('!([a-zA-Z0-9-# .-]+)?', 'g'),  "\"$1\"");
     };
   };
 
