@@ -109,7 +109,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       var newState;
       var tempChanges = {};
       _.each(ch, function(c){
-        console.log(c.path);
         if(c.kind === 'E'){
           self.createNestedObject(tempChanges, c.path, c.rhs);
         } else if(c.kind === 'A') {
