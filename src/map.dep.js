@@ -10,7 +10,9 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
     self.name = 'map';
 
     self.alterState = function(state){
-      state[self.name] = {bounds:map.getBounds()};
+      if(state.currentView === 'map'){
+        state[self.name] = {bounds:map.getBounds()};
+      }
       return state;
     };
 
@@ -19,7 +21,7 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
     };
 
     self.update = function(state){
-      if(map){
+      if(map && state && state.map){
         var newBounds = _.map(_.values(state.map.bounds), _.values);
         setTimeout(map.fitBounds.bind(map,newBounds), 0);
       }

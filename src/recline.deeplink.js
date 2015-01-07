@@ -133,9 +133,9 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      */
     self.alterState = function(state){
       if(_.isEmpty(dependencies)) return state;
-      var alter = _.compose.apply(null, _.map(dependencies, function(ctrl){
-        return ctrl['alterState'];
-      }));
+      var alter = _.compose.apply(null, _.without(_.map(dependencies, function(ctrl){
+        return ctrl.alterState;
+      }), undefined));
       return alter(state);
     };
 
