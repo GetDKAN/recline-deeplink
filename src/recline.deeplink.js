@@ -14,7 +14,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     var self = this;
     var currentView = null;
     var router;
-    var changes = {};
     var parser = new my.Parser();
     var deep = DeepDiff.noConflict();
     var firstState = _.omit(JSON.parse(JSON.stringify(multiview.state)), 'dataset');
@@ -23,7 +22,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
 
 
     function inv(method){
-      var args = _.rest(_.toArray(arguments))
+      var args = _.rest(_.toArray(arguments));
       return function(ctrl){
         return _.isFunction(ctrl[method]) && ctrl[method].apply(ctrl, args);
       };
@@ -36,8 +35,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     self.updateState = function(serializedState){
       var multiviewState = self.transform(serializedState, self.toState);
       _.each(dependencies, inv('update', multiviewState));
-      changes = _.omit(multiviewState, _.keys(dependencies)) || {};
-
       if (multiviewState && !_.isEmpty(multiviewState)) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
         multiview.model.queryState.set(multiviewState.query);
@@ -57,6 +54,13 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
     };
 
+    /**
+     * Adds a dependency to this router. Something to track and 
+     * to execute when tracked thing changes
+     * @param  {Function} ctrl Constructor with the implementation
+     * of this observer
+     * @return {undefined}
+     */    
     self.addDependency = function(ctrl){
       dependencies[ctrl.name] = ctrl;
     };
@@ -107,16 +111,14 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     self.onStateChange = function(event){
       var ch = deep.diff(firstState, _.omit(multiview.state.attributes, 'dataset'));
       var newState;
-      var tempChanges = {};
+      var changes = {};
       _.each(ch, function(c){
         if(c.kind === 'E'){
-          self.createNestedObject(tempChanges, c.path, c.rhs);
+          self.createNestedObject(changes, c.path, c.rhs);
         } else if(c.kind === 'A') {
-          self.createNestedObject(tempChanges, c.path, c);
+          self.createNestedObject(changes, c.path, c);
         }
       });
-
-      changes = _.extend(changes, tempChanges);
       newState = new recline.Model.ObjectState();
       newState.attributes = changes;
       newState.attributes = self.alterState(newState.attributes);
