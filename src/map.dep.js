@@ -4,7 +4,8 @@ this.recline = this.recline || {};
 this.recline.DeepLink = this.recline.DeepLink || {};
 this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
 
-;(function($, my){
+;(function($, _, my){
+  'use strict';
   my.Map = function(map, router){
     var self = this;
     self.name = 'map';
@@ -16,7 +17,7 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
       return state;
     };
 
-    self.updateUrl = function(e){
+    self.updateUrl = function(){
       router.onStateChange(null);
     };
 
@@ -26,9 +27,8 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
         setTimeout(map.fitBounds.bind(map,newBounds), 0);
       }
     };
-
     map.on('dragend', self.updateUrl);
     map.on('zoomend', self.updateUrl);
   };
 
-})(jQuery, this.recline.DeepLink.Deps);
+})(jQuery, _, this.recline.DeepLink.Deps);

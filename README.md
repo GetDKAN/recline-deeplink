@@ -62,6 +62,8 @@ Also you have to implement the update method that will be called when the name k
 
 You can check map.dep.js plugin implementation at src directory for more details.
 
+## TODO
+* Create unit tests
 
 ## Caveats
 Since the state is shared through url, data edition (eg. add, delete or edit a row in the dataset) is not saved at all.
