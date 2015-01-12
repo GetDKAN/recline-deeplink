@@ -64,6 +64,7 @@ You can check map.dep.js plugin implementation at src directory for more details
 
 ## TODO
 * Create unit tests
+* Format accordingly javacript coding standards
 
 ## Caveats
 Since the state is shared through url, data edition (eg. add, delete or edit a row in the dataset) is not saved at all.

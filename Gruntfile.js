@@ -1,4 +1,6 @@
 module.exports = function(grunt) {
+  'use strict';
+
   // Project configuration.
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
@@ -10,7 +12,7 @@ module.exports = function(grunt) {
         src: ['src/**/*.js'],
         dest: 'dist/<%= pkg.name %>.min.js'
       }
-    },    
+    },
     uglify: {
       options: {
         banner: '/*! <%= pkg.name %> v0.1 */\n'
@@ -28,7 +30,7 @@ module.exports = function(grunt) {
         options: {
           bases: ['./'],
           port: 8080,
-          hostname: "0.0.0.0",
+          hostname: '0.0.0.0',
           livereload: true
         }
       }
@@ -60,12 +62,13 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-livereload');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-concat');
+
   // Default task(s).
   grunt.registerTask('default', [
     'express',
     'jshint',
     'concat',
-    'uglify',    
+    'uglify',
     'open',
     'watch'
   ]);
@@ -73,7 +76,7 @@ module.exports = function(grunt) {
   grunt.registerTask('build', [
     'jshint',
     'concat',
-    'uglify'    
+    'uglify'
   ]);
 
   grunt.registerTask('lint', ['jshint']);
