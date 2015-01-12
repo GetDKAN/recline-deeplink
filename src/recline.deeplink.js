@@ -1,4 +1,4 @@
-/*jshint multistr:true */
+/*jshint multistr:true*/
 
 this.recline = this.recline || {};
 this.recline.DeepLink = this.recline.DeepLink || {};
@@ -12,14 +12,15 @@ this.recline.DeepLink = this.recline.DeepLink || {};
    */
   my.Router = function(multiview){
     var self = this;
-    var currentView = null;
-    var router;
     var parser = new my.Parser();
+    
     var deep = DeepDiff.noConflict();
+    
+    // TODO: pass firstState as parameter.
     var firstState = _.omit(JSON.parse(JSON.stringify(multiview.state)), 'dataset');
     var currentState = {};
     var dependencies = {};
-
+    var router;
 
     function inv(method){
       var args = _.rest(_.toArray(arguments));
@@ -33,7 +34,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @param  {String} state
      */
     self.updateState = function(serializedState){
-      var multiviewState = self.transform(serializedState, self.toState);
+      var multiviewState = self.transform(serializedState, self.toState); 
       _.each(dependencies, inv('update', multiviewState));
       if (multiviewState && !_.isEmpty(multiviewState)) {
         multiviewState = _.extend(multiview.state.attributes, multiviewState);
@@ -149,30 +150,30 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {Object}
      */
     self.createNestedObject = function( base, props, value ) {
-        var names = _.clone(props);
-        var lastName = arguments.length === 3 ? names.pop() : false;
+      var names = _.clone(props);
+      var lastName = arguments.length === 3 ? names.pop() : false;
 
-        for( var i = 0; i < names.length; i++) {
-            base = base[names[i]] = base[names[i]] || {};
-        }
+      for( var i = 0; i < names.length; i++) {
+          base = base[names[i]] = base[names[i]] || {};
+      }
 
-        if(lastName && !_.isArray(value) && !_.isObject(value)){
-          base = base[lastName] = value;
-        }
+      if(lastName && !_.isArray(value) && !_.isObject(value)){
+        base = base[lastName] = value;
+      }
 
-        if(_.isObject(value) && value.kind === 'A'){
-          if(_.isUndefined(base[lastName])){
-            base[lastName] = [];
-          }
-          if(value.item.kind == 'N'){
-            base = base[lastName][value.index] = value.item.rhs;
-          }
-          if(value.item.kind == 'D'){
-            base[lastName].splice(value.index, value.item.rhs);
-            base = base[lastName];
-          }
+      if(_.isObject(value) && value.kind === 'A'){
+        if(_.isUndefined(base[lastName])){
+          base[lastName] = [];
         }
-        return base;
+        if(value.item.kind == 'N'){
+          base = base[lastName][value.index] = value.item.rhs;
+        }
+        if(value.item.kind == 'D'){
+          base[lastName].splice(value.index, value.item.rhs);
+          base = base[lastName];
+        }
+      }
+      return base;
     };
 
     /**
@@ -248,9 +249,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.compress = function(str){
-      //replace words
-      //remove start and end brackets
-      //replace true by 1 and false by 0
+      
+      // Replace words
+      // Remove start and end brackets
+      // Replace true by 1 and false by 0
       return self.escapeStrings(str);
     };
 
@@ -269,11 +271,13 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.escapeStrings = function(str){
-      //stripping quotes from keys
+      
+      // Stripping quotes from keys
       str = str.replace(/"([a-zA-Z-_.]+)"\s?:/g ,  "$1:");
-      //replacing spaces between quotes with underscores
-      str = str.replace(/\x20(?![^"]*("[^"]*"[^"]*)*$)/g, "_");
-      return str.replace(/"([a-zA-Z0-9-#_.-]+)?"/g ,  "!$1");
+      
+      // Replacing spaces between quotes with underscores
+      str = str.replace(/\x20(?![^"]*("[^"]*"[^"]*)*$)/g, "++");
+      return str.replace(/"([a-zA-Z0-9-#_.-|+]+)?"/g ,  "!$1");
     };
 
     /**
@@ -282,11 +286,14 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.parseStrings = function(str){
-      //adding quotes to keys
-      str = str.replace(/([a-zA-Z-_.]+)\s?:/g ,  "\"$1\":");
-      //replacing underscores with spaces for any word that start with !
-      str = str.replace(/![a-zA-Z0-9_. -]+/g, function(x) { return x.replace(/_/g, ' '); });
-      return str.replace(new RegExp('!([a-zA-Z0-9-# .-]+)?', 'g'),  "\"$1\"");
+      
+      // Adding quotes to keys
+      str = str.replace(/([a-zA-Z-_.\+]+)\s?:/g ,  "\"$1\":");
+      
+      // Replacing underscores with spaces for any word that start with !
+      // TODO: make space replacement configurable
+      str = str.replace(/![a-zA-Z0-9_. -\+]+/g, function(x) { return x.replace(/\+\+/g, ' '); });      
+      return str.replace(new RegExp('!([a-zA-Z0-9-_# .-]+)?', 'g'),  "\"$1\"");
     };
   };
 
