@@ -104,7 +104,6 @@ function createMultiView(dataset, state) {
 }
 
 jQuery(function($) {
-  window.multiView = null;
   window.explorerDiv = $('.data-explorer-here');
 
   // create the demo dataset
@@ -113,12 +112,75 @@ jQuery(function($) {
   // now create the multiview
   // this is rather more elaborate than the minimum as we configure the
   // MultiView in various ways (see function below)
-  window.multiview = createMultiView(dataset);
-  window.router = new recline.DeepLink.Router(window.multiview);
-  var map = window.multiview.pageViews[2].view.map;
-  window.router.addDependency(
-    new recline.DeepLink.Deps.Map(map, window.router));
-  window.router.start();
+  var multiview = createMultiView(dataset);
+  var router = new recline.DeepLink.Router(multiview.state);
+
+  var map = multiview.pageViews[2].view.map;
+  router.addDependency(new recline.DeepLink.Deps.Map(map, router));
+
+  router.start({
+    init:function(state){
+      if (state && !_.isEmpty(state)) {
+        state = _.extend(multiview.state.attributes, state);
+        multiview.model.queryState.set(state.query);
+        multiview.updateNav(state.currentView || 'grid');
+        _.each(multiview.pageViews, function(view, index){
+          var viewKey ='view-' + view.id;
+          var pageView = multiview.pageViews[index];
+          pageView.view.state.set(state[viewKey]);
+          if(_.isFunction(pageView.view.redraw) && pageView.id === 'graph'){
+            setTimeout(pageView.view.redraw, 0);
+          } else if(pageView.id === 'grid') {
+            pageView.view.render();
+          }
+        });
+      } else {
+        multiview.updateNav('grid');
+      }
+    },
+    stateChange: function(){
+      var id = multiview.state.get('currentView');
+      multiview.pager.render();
+      if(id === 'graph' || id === 'map') {
+        var index = getCurrentViewIndex();
+        var menuMap = {graph:'editor', map:'menu'};
+        var menuName = menuMap[id];
+        var menu = multiview.pageViews[index].view[menuName];
+        var viewState = getCurrentView().view.state;
+        menu.state.set(viewState.attributes);
+        menu.render();
+      }
+    },
+    listenTo: [multiview.state, multiview.model],
+    ignoredKeys: ['dataset']
+  });
+
+
+
+  /**
+   * Gets the current displayed view of the multiview.
+   * @return {Object}
+   */
+  function getCurrentView(){
+    var id = multiview.state.get('currentView');
+    return _.findWhere(multiview.pageViews, {id:id});
+  }
+
+  /**
+   * Gets the index of current displayed view.
+   * @return {[Integer]}
+   */
+   function getCurrentViewIndex(){
+    var id = multiview.state.get('currentView');
+    var index;
+    _.each(multiview.pageViews, function(item, i){
+      if(item.id === id){
+        index = i;
+      }
+    });
+    return index;
+  }
+
 
   // last, we'll demonstrate binding to changes in the dataset
   // this will print out a summary of each change onto the page in the

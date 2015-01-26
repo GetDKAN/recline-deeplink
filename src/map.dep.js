@@ -17,8 +17,8 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
       return state;
     };
 
-    self.updateUrl = function(){
-      router.onStateChange(null);
+    self.updateURL = function(){
+      router.updateURL(null);
     };
 
     self.update = function(state){
@@ -27,8 +27,8 @@ this.recline.DeepLink.Deps = this.recline.DeepLink.Deps || {};
         setTimeout(map.fitBounds.bind(map,newBounds), 0);
       }
     };
-    map.on('dragend', self.updateUrl);
-    map.on('zoomend', self.updateUrl);
+    map.on('dragend', self.updateURL);
+    map.on('zoomend', self.updateURL);
   };
 
 })(jQuery, _, this.recline.DeepLink.Deps);

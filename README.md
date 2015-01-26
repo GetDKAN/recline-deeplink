@@ -15,9 +15,34 @@ Saves the current multiview state allowing to share a visualization by url.
 You only have to pass a valid multiview object as value to recline.DeepLink.Router constructor.
 
 ```javascript
-var router = new recline.DeepLink.Router(multiview);
-router.start();
+var router = new recline.DeepLink.Router(objectToSave);
+router.start({
+    init: function(state){
+
+    },
+    updateState: function(currentState, oldState){
+
+    },
+    listenTo: [],
+    ignoredKeys: [],
+});
 ```
+
+### Constructor
+Takes object you want to save as param. And optionally you could pass a second object with the initial default state you want to compute difference against to. (i.e. object state of your view without any user changes)
+
+### init
+It receives the parsed url state as parameter. Within you should run actions you need to configure how your view should be displayed.
+
+### updateState
+It receives the newState and oldState as parameter. This method is triggered everytime a tracked object change. You sould use it to update your view accordingly new state.
+
+### listenTo
+An array containing object you want to track for changes. Normally you want to track objects you save but sometimes could be useful to track objects different of you save.
+
+### ignoredKeys
+An array containing keys you don't want to save in the url. Useful when you have a key with so much data to save in the url.
+
 
 ## Installation
 

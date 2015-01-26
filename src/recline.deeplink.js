@@ -8,20 +8,19 @@ this.recline.DeepLink = this.recline.DeepLink || {};
 
   /**
    * Router object
-   * @param {recline.view.MultiView} multiview
+   * @param {recline.ObjectState} state
+   * @param {Object} first
    */
-  my.Router = function(multiview){
+  my.Router = function(state, first){
     var self = this;
-    var parser = new my.Parser();
-
+    var parser;
     var deep = DeepDiff.noConflict();
-
-    // TODO: pass firstState as parameter.
-    var firstState = _.omit(JSON.parse(JSON.stringify(multiview.state)),
-      'dataset');
     var currentState = {};
     var dependencies = {};
     var router;
+    var options;
+    var firstState;
+
 
     function inv(method){
       var args = _.rest(_.toArray(arguments));
@@ -31,29 +30,13 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     }
 
     /**
-     * Update the multiview state and render the new state.
-     * @param  {String} state
+     * Init first state
+     * @param  {[String]} serializedState Url serialized state
      */
-    self.updateState = function(serializedState){
-      var multiviewState = self.transform(serializedState, self.toState); 
-      _.each(dependencies, inv('update', multiviewState));
-      if (multiviewState && !_.isEmpty(multiviewState)) {
-        multiviewState = _.extend(multiview.state.attributes, multiviewState);
-        multiview.model.queryState.set(multiviewState.query);
-        multiview.updateNav(multiviewState.currentView || 'grid');
-        _.each(multiview.pageViews, function(view, index){
-          var viewKey ='view-' + view.id;
-          var pageView = multiview.pageViews[index];
-          pageView.view.state.set(multiviewState[viewKey]);
-          if(_.isFunction(pageView.view.redraw) && pageView.id === 'graph'){
-            setTimeout(pageView.view.redraw, 0);
-          } else if(pageView.id === 'grid') {
-            pageView.view.render();
-          }
-        });
-      } else {
-        multiview.updateNav('grid');
-      }
+    self._init = function(serializedState){
+      var state = self.transform(serializedState, self.toState);
+      _.each(dependencies, inv('update', state));
+      options.init(state);
     };
 
     /**
@@ -99,22 +82,24 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.toParams = function(state){
-      var stringObject = JSON.stringify(_.omit(state.attributes, 'dataset'));
+      var filtered = _(state.attributes).omit(options.ignoredKeys);
+      var stringObject = JSON.stringify(filtered);
       return parser.compress(stringObject);
     };
 
     /**
-     * Listen for changes in the multiview state. It computes the differences
+     * Listen for changes in the state. It computes the differences
      * between the initial state and the current state. Creates a patch object
      * from this difference. Converts this new object to params and finally
      * navigates to that state.
      * @param  {Event} event
      */
-    self.onStateChange = function(){
-      var ch = deep.diff(firstState, _.omit(multiview.state.attributes,
-        'dataset'));
-      var newState;
+    self.updateURL = function(){
+      var oldState = _.omit(state.attributes, 'dataset');
+      var ch = deep.diff(firstState, oldState);
       var changes = {};
+      var newState;
+
       _.each(ch, function(c){
         if(c.kind === 'E'){
           self.createNestedObject(changes, c.path, c.rhs);
@@ -122,12 +107,13 @@ this.recline.DeepLink = this.recline.DeepLink || {};
           self.createNestedObject(changes, c.path, c);
         }
       });
+
       newState = new recline.Model.ObjectState();
       newState.attributes = changes;
       newState.attributes = self.alterState(newState.attributes);
       currentState = newState;
       router.navigate(self.transform(newState, self.toParams));
-      self.updateControls();
+      options.stateChange(currentState, oldState);
     };
 
     /**
@@ -181,61 +167,33 @@ this.recline.DeepLink = this.recline.DeepLink || {};
     };
 
     /**
-     * Updates controls based on the new state.
-     */
-    self.updateControls = function(){
-      var id = multiview.state.get('currentView');
-      multiview.pager.render();
-      if(id === 'graph' || id === 'map') {
-        var index = self.getCurrentViewIndex();
-        var menuMap = {graph:'editor', map:'menu'};
-        var menuName = menuMap[id];
-        var menu = multiview.pageViews[index].view[menuName];
-        var viewState = self.getCurrentView().view.state;
-        menu.state.set(viewState.attributes);
-        menu.render();
-      }
-    };
-
-    /**
-     * Gets the current displayed view of the multiview.
-     * @return {Object}
-     */
-    self.getCurrentView = function(){
-      var id = multiview.state.get('currentView');
-      return _.findWhere(multiview.pageViews, {id:id});
-    };
-
-    /**
-     * Gets the index of current displayed view.
-     * @return {[Integer]}
-     */
-    self.getCurrentViewIndex = function(){
-      var id = multiview.state.get('currentView');
-      var index;
-      _.each(multiview.pageViews, function(item, i){
-        if(item.id === id){
-          index = i;
-        }
-      });
-      return index;
-    };
-
-    /**
      * Initializes the router object.
      */
-    self.start = function(){
+    self.start = function(opts){
+      options = opts;
       var Router = Backbone.Router.extend({
         routes: {
           '*state': 'defaultRoute',
         },
-        defaultRoute: function(state) {
-          self.updateState(state);
-        }
+        defaultRoute: self._init
       });
+
+      if(opts.parser) {
+        parser = new opts.parser();
+      } else {
+        parser = new my.Parser();
+      }
+
+      // Set object to default state.
+      firstState = first || _(JSON.parse(JSON.stringify(state)))
+        .omit(opts.ignoredKeys);
+
+      // Listen for object changes.
+      _.each(options.listenTo, function(obj){
+        obj.on('all', self.updateURL);
+      });
+
       router = new Router();
-      multiview.listenTo(multiview.state, 'all', self.onStateChange);
-      multiview.model.bind('all', self.onStateChange);
       Backbone.history.start();
     };
 
