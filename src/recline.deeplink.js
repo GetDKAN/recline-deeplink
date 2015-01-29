@@ -185,8 +185,8 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
 
       // Set object to default state.
-      firstState = first || _(JSON.parse(JSON.stringify(state)))
-        .omit(opts.ignoredKeys);
+      firstState = first || _.omit(JSON.parse(JSON.stringify(state.attributes)),
+        opts.ignoredKeys);
 
       // Listen for object changes.
       _.each(options.listenTo, function(obj){
