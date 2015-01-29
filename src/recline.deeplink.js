@@ -37,6 +37,12 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       var state = self.transform(serializedState, self.toState);
       _.each(dependencies, inv('update', state));
       options.init(state);
+      // Listen for object changes.
+
+      _.each(options.listenTo, function(obj){
+        obj.on('change', self.updateURL);
+      });
+      _.isFunction(options.initComplete) && options.initComplete();
     };
 
     /**
@@ -94,7 +100,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * navigates to that state.
      * @param  {Event} event
      */
-    self.updateURL = function(){
+    self.updateURL = function(e){
       var oldState = _.omit(state.attributes, 'dataset');
       var ch = deep.diff(firstState, oldState);
       var changes = {};
@@ -104,14 +110,16 @@ this.recline.DeepLink = this.recline.DeepLink || {};
         if(c.kind === 'E'){
           self.createNestedObject(changes, c.path, c.rhs);
         } else if(c.kind === 'A') {
-          self.createNestedObject(changes, c.path, c);
+          self.createNestedObject(changes, c.path, c, oldState);
         }
       });
+
 
       newState = new recline.Model.ObjectState();
       newState.attributes = changes;
       newState.attributes = self.alterState(newState.attributes);
       currentState = newState;
+
       router.navigate(self.transform(newState, self.toParams));
       options.stateChange(currentState, oldState);
     };
@@ -139,9 +147,10 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @param  {*} value
      * @return {Object}
      */
-    self.createNestedObject = function( base, props, value ) {
+    self.createNestedObject = function( base, props, value, oldState) {
+      console.log(base, props, value);
       var names = _.clone(props);
-      var lastName = arguments.length === 3 ? names.pop() : false;
+      var lastName = names.pop();
 
       for( var i = 0; i < names.length; i++) {
           base = base[names[i]] = base[names[i]] || {};
@@ -152,18 +161,18 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       }
 
       if(_.isObject(value) && value.kind === 'A'){
-        if(_.isUndefined(base[lastName])){
-          base[lastName] = [];
-        }
-        if(value.item.kind === 'N'){
-          base = base[lastName][value.index] = value.item.rhs;
-        }
-        if(value.item.kind === 'D'){
-          base[lastName].splice(value.index, value.item.rhs);
-          base = base[lastName];
+        if(!base[lastName] || !_.isArray(base[lastName])){
+          base[lastName] = self._copyFromPath(oldState, value.path);
         }
       }
       return base;
+    };
+
+    self._copyFromPath = function(obj, path){
+      for( var i = 0; i < path.length; i++) {
+          obj = obj[path[i]];
+      }
+      return obj;
     };
 
     /**
@@ -188,10 +197,6 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       firstState = first || _.omit(JSON.parse(JSON.stringify(state.attributes)),
         opts.ignoredKeys);
 
-      // Listen for object changes.
-      _.each(options.listenTo, function(obj){
-        obj.on('all', self.updateURL);
-      });
 
       router = new Router();
       Backbone.history.start();

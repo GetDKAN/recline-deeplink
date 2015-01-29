@@ -112,7 +112,7 @@ jQuery(function($) {
   // now create the multiview
   // this is rather more elaborate than the minimum as we configure the
   // MultiView in various ways (see function below)
-  var multiview = createMultiView(dataset);
+  window.multiview = createMultiView(dataset);
   var router = new recline.DeepLink.Router(multiview.state);
 
   var map = multiview.pageViews[2].view.map;
@@ -127,6 +127,7 @@ jQuery(function($) {
         _.each(multiview.pageViews, function(view, index){
           var viewKey ='view-' + view.id;
           var pageView = multiview.pageViews[index];
+
           pageView.view.state.set(state[viewKey]);
           if(_.isFunction(pageView.view.redraw) && pageView.id === 'graph'){
             setTimeout(pageView.view.redraw, 0);
@@ -137,6 +138,9 @@ jQuery(function($) {
       } else {
         multiview.updateNav('grid');
       }
+    },
+    initComplete: function(){
+      multiview.model.trigger('change');
     },
     stateChange: function(){
       var id = multiview.state.get('currentView');
