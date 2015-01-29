@@ -82,7 +82,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
      * @return {String}
      */
     self.toParams = function(state){
-      var filtered = _(state.attributes).omit(options.ignoredKeys);
+      var filtered = _.omit(state.attributes, options.ignoredKeys);
       var stringObject = JSON.stringify(filtered);
       return parser.compress(stringObject);
     };
