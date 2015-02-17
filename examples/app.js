@@ -113,7 +113,11 @@ jQuery(function($) {
   window.router.addDependency(
     new recline.DeepLink.Deps.Map(map, window.router));
 
-  window.router.on('onStateChange', function(state){
+  window.router.on('stateChange', function(state){
+    console.log(state);
+  });
+
+  window.router.on('init', function(state){
     console.log(state);
   });
 

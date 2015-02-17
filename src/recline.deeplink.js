@@ -56,6 +56,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       } else {
         multiview.updateNav('grid');
       }
+      self.trigger('init', {serializedState:serializedState});
     };
 
     /**
@@ -133,7 +134,7 @@ this.recline.DeepLink = this.recline.DeepLink || {};
       serializedState = self.transform(newState, self.toParams);
       router.navigate(serializedState);
       self.updateControls();
-      self.trigger('onStateChange',
+      self.trigger('stateChange',
         {serializedState:serializedState, state:currentState});
     };
 
