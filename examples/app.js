@@ -1,34 +1,9 @@
 'use strict';
-
-jQuery(function($) {
-  window.multiView = null;
-  window.explorerDiv = $('.data-explorer-here');
-
-  // create the demo dataset
-  var dataset = createDemoDataset();
-  // now create the multiview
-  // this is rather more elaborate than the minimum as we configure the
-  // MultiView in various ways (see function below)
-  window.multiview = createMultiView(dataset);
-  window.router = new recline.DeepLink.Router(window.multiview);
-  var map = window.multiview.pageViews[2].view.map;
-  window.router.addDependency(new recline.DeepLink.Deps.Map(map, window.router));
-  window.router.start();
-
-  // last, we'll demonstrate binding to changes in the dataset
-  // this will print out a summary of each change onto the page in the
-  // changelog section
-  dataset.records.bind('all', function(name, obj) {
-    var $info = $('<div />');
-    $info.html(name + ': ' + JSON.stringify(obj.toJSON()));
-    $('.changelog').append($info);
-    $('.changelog').show();
-  });
-});
-
 // create standard demo dataset
 function createDemoDataset() {
-  var dataset = new recline.Model.Dataset({
+  var dataset;
+  /* jshint ignore:start */
+  dataset = new recline.Model.Dataset({
     records: [
       {id: 0, date: '2011-01-01', x: 1, y: 2, z: 3, country: 'DE', title: 'first', lat:52.56, lon:13.40, Dist_ID:12},
       {id: 1, date: '2011-02-02', x: 2, y: 4, z: 24, country: 'UK', title: 'second', lat:54.97, lon:-1.60, Dist_ID:11},
@@ -52,13 +27,14 @@ function createDemoDataset() {
       {id: 'Dist_ID'}
     ]
   });
+  /* jshint ignore:end */
   return dataset;
 }
 
 // make MultivView
 //
 // creation / initialization in a function so we can call it again and again
-var createMultiView = function(dataset, state) {
+function createMultiView(dataset, state) {
   // remove existing multiview if present
   var reload = false;
   if (window.multiView) {
@@ -120,5 +96,39 @@ var createMultiView = function(dataset, state) {
     views: views
   });
   return multiView;
-};
+}
+
+jQuery(function($) {
+  window.multiView = null;
+  window.explorerDiv = $('.data-explorer-here');
+
+  // create the demo dataset
+  var dataset = createDemoDataset();
+  // now create the multiview
+  // this is rather more elaborate than the minimum as we configure the
+  // MultiView in various ways (see function below)
+  window.multiview = createMultiView(dataset);
+  window.router = new recline.DeepLink.Router(window.multiview);
+  var map = window.multiview.pageViews[2].view.map;
+  window.router.addDependency(
+    new recline.DeepLink.Deps.Map(map, window.router));
+
+  window.router.on('onStateChange', function(state){
+    console.log(state);
+  });
+
+  window.router.start();
+
+  // last, we'll demonstrate binding to changes in the dataset
+  // this will print out a summary of each change onto the page in the
+  // changelog section
+  dataset.records.bind('all', function(name, obj) {
+    var $info = $('<div />');
+    $info.html(name + ': ' + JSON.stringify(obj.toJSON()));
+    $('.changelog').append($info);
+    $('.changelog').show();
+  });
+});
+
+
 
